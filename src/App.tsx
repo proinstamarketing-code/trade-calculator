@@ -1,23 +1,56 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Market = "crypto" | "tradfi";
 type Side = "LONG" | "SHORT";
 type FeeSide = "Taker" | "Maker";
 
+type TradFiCategory =
+  | "all"
+  | "forex"
+  | "stocks"
+  | "indices"
+  | "metals"
+  | "commodities";
+
 type Contract = {
   symbol: string;
   asset?: string;
   currency?: string;
+
   pricePrecision?: number;
   quantityPrecision?: number;
+
   makerFeeRate?: number;
   takerFeeRate?: number;
+
   tradeMinQuantity?: number;
   tradeMinUSDT?: number;
+
   maxLongLeverage?: number;
   maxShortLeverage?: number;
+
   status?: number;
+
+  marketType?: "crypto" | "tradfi";
+  tradfiCategory?: TradFiCategory;
+
+  aliases?: string[];
 };
+
+type NumberInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+
+  suffix?: string;
+
+  min?: number;
+  step?: string;
+};
+
+/* =========================================================
+   FALLBACK
+   Используются только если BingX API временно недоступен.
+   ========================================================= */
 
 const fallbackCrypto: Contract[] = [
   {
@@ -31,7 +64,9 @@ const fallbackCrypto: Contract[] = [
     tradeMinUSDT: 2,
     maxLongLeverage: 125,
     maxShortLeverage: 125,
+    marketType: "crypto",
   },
+
   {
     symbol: "ETH-USDT",
     asset: "ETH",
@@ -43,7 +78,9 @@ const fallbackCrypto: Contract[] = [
     tradeMinUSDT: 2,
     maxLongLeverage: 100,
     maxShortLeverage: 100,
+    marketType: "crypto",
   },
+
   {
     symbol: "SOL-USDT",
     asset: "SOL",
@@ -55,152 +92,251 @@ const fallbackCrypto: Contract[] = [
     tradeMinUSDT: 2,
     maxLongLeverage: 100,
     maxShortLeverage: 100,
-  },
-  {
-    symbol: "XRP-USDT",
-    asset: "XRP",
-    currency: "USDT",
-    pricePrecision: 5,
-    quantityPrecision: 0,
-    makerFeeRate: 0.0002,
-    takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
-    maxLongLeverage: 50,
-    maxShortLeverage: 50,
-  },
-  {
-    symbol: "DOGE-USDT",
-    asset: "DOGE",
-    currency: "USDT",
-    pricePrecision: 6,
-    quantityPrecision: 0,
-    makerFeeRate: 0.0002,
-    takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
-    maxLongLeverage: 50,
-    maxShortLeverage: 50,
-  },
-  {
-    symbol: "BNB-USDT",
-    asset: "BNB",
-    currency: "USDT",
-    pricePrecision: 2,
-    quantityPrecision: 2,
-    makerFeeRate: 0.0002,
-    takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
-    maxLongLeverage: 75,
-    maxShortLeverage: 75,
+    marketType: "crypto",
   },
 ];
 
-const fallbackTradfi: Contract[] = [
+const fallbackTradFi: Contract[] = [
   {
-    symbol: "GOLD-USDT",
-    asset: "GOLD",
+    symbol: "GOLD(XAU)-USDT",
+    asset: "GOLD(XAU)",
     currency: "USDT",
     pricePrecision: 2,
     quantityPrecision: 3,
+
     makerFeeRate: 0.0002,
     takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
+
     maxLongLeverage: 100,
     maxShortLeverage: 100,
+
+    marketType: "tradfi",
+    tradfiCategory: "metals",
+
+    aliases: ["GOLD", "XAU", "XAUUSD"],
   },
+
   {
-    symbol: "TSLA-USDT",
-    asset: "TSLA",
+    symbol: "SILVER(XAG)-USDT",
+    asset: "SILVER(XAG)",
     currency: "USDT",
-    pricePrecision: 2,
-    quantityPrecision: 3,
+
+    pricePrecision: 3,
+    quantityPrecision: 2,
+
     makerFeeRate: 0.0002,
     takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
+
+    maxLongLeverage: 100,
+    maxShortLeverage: 100,
+
+    marketType: "tradfi",
+    tradfiCategory: "metals",
+
+    aliases: ["SILVER", "XAG", "XAGUSD"],
+  },
+
+  {
+    symbol: "Zinc(XZN)-USDT",
+    asset: "Zinc(XZN)",
+    currency: "USDT",
+
+    pricePrecision: 4,
+    quantityPrecision: 2,
+
+    makerFeeRate: 0.0002,
+    takerFeeRate: 0.0005,
+
+    maxLongLeverage: 50,
+    maxShortLeverage: 50,
+
+    marketType: "tradfi",
+    tradfiCategory: "commodities",
+
+    aliases: ["ZINC", "XZN"],
+  },
+
+  {
+    symbol: "NVDA-USDT",
+    asset: "NVDA",
+    currency: "USDT",
+
+    pricePrecision: 2,
+    quantityPrecision: 3,
+
+    makerFeeRate: 0.0002,
+    takerFeeRate: 0.0005,
+
     maxLongLeverage: 20,
     maxShortLeverage: 20,
+
+    marketType: "tradfi",
+    tradfiCategory: "stocks",
   },
+
   {
     symbol: "AAPL-USDT",
     asset: "AAPL",
     currency: "USDT",
+
     pricePrecision: 2,
     quantityPrecision: 3,
+
     makerFeeRate: 0.0002,
     takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
+
     maxLongLeverage: 20,
     maxShortLeverage: 20,
+
+    marketType: "tradfi",
+    tradfiCategory: "stocks",
   },
+
   {
-    symbol: "EUR-USDT",
-    asset: "EUR",
+    symbol: "EURUSD-USDT",
+    asset: "EURUSD",
     currency: "USDT",
+
     pricePrecision: 5,
     quantityPrecision: 2,
+
     makerFeeRate: 0.0002,
     takerFeeRate: 0.0005,
-    tradeMinUSDT: 2,
+
     maxLongLeverage: 100,
     maxShortLeverage: 100,
+
+    marketType: "tradfi",
+    tradfiCategory: "forex",
+
+    aliases: ["EURUSD", "EUR/USD"],
+  },
+
+  {
+    symbol: "XAUUSD-USDT",
+    asset: "XAUUSD",
+    currency: "USDT",
+
+    pricePrecision: 2,
+    quantityPrecision: 3,
+
+    makerFeeRate: 0.0002,
+    takerFeeRate: 0.0005,
+
+    maxLongLeverage: 100,
+    maxShortLeverage: 100,
+
+    marketType: "tradfi",
+    tradfiCategory: "metals",
+
+    aliases: ["XAUUSD", "XAU/USD"],
   },
 ];
 
-function n(value: string | number) {
-  const parsed = Number(String(value).replace(",", "."));
+const categoryNames: Record<TradFiCategory, string> = {
+  all: "Все",
+  forex: "Forex",
+  stocks: "Акции",
+  indices: "Индексы",
+  metals: "Металлы",
+  commodities: "Сырьё",
+};
+
+/* =========================================================
+   INPUT
+   Храним значение строкой.
+   Теперь поле можно реально очистить.
+   ========================================================= */
+
+function NumericInput({
+  value,
+  onChange,
+  suffix,
+  min,
+  step = "any",
+}: NumberInputProps) {
+  return (
+    <div className="input-suffix">
+      <input
+        type="number"
+        inputMode="decimal"
+        value={value}
+        min={min}
+        step={step}
+        onChange={(event) => onChange(event.target.value)}
+      />
+
+      {suffix && <span>{suffix}</span>}
+    </div>
+  );
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function toNumber(value: string | number) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (value.trim() === "") {
+    return 0;
+  }
+
+  const parsed = Number(value.replace(",", "."));
+
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function fmt(value: number, digits = 2) {
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+
   return new Intl.NumberFormat("ru-RU", {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
-  }).format(Number.isFinite(value) ? value : 0);
+  }).format(value);
 }
 
-/*
- * Используем точность инструмента BingX.
- * Дополнительно защищаемся от слишком маленьких чисел,
- * чтобы 0.00000234 никогда не превращалось визуально в 0.00.
- */
 function smartPrecision(
   value: number,
   exchangePrecision?: number
 ) {
   const absolute = Math.abs(value);
 
-  let calculated = 2;
+  let derived = 2;
 
   if (absolute === 0) {
-    calculated = 2;
-  } else if (absolute >= 1000) {
-    calculated = 2;
+    derived = exchangePrecision ?? 2;
   } else if (absolute >= 100) {
-    calculated = 2;
+    derived = 2;
   } else if (absolute >= 1) {
-    calculated = 4;
+    derived = 4;
   } else if (absolute >= 0.1) {
-    calculated = 5;
+    derived = 5;
   } else if (absolute >= 0.01) {
-    calculated = 6;
+    derived = 6;
   } else if (absolute >= 0.001) {
-    calculated = 7;
+    derived = 7;
   } else {
-    calculated = 8;
+    derived = 8;
   }
 
-  const precision = Math.max(
-    calculated,
-    exchangePrecision ?? 0
+  return Math.min(
+    Math.max(derived, exchangePrecision ?? 0),
+    10
   );
-
-  return Math.min(precision, 10);
 }
 
 function fmtPrice(
   value: number,
   exchangePrecision?: number
 ) {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
 
   const digits = smartPrecision(
     value,
@@ -217,21 +353,35 @@ function fmtSmallMoney(
   value: number,
   exchangePrecision?: number
 ) {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
 
   if (Math.abs(value) >= 1) {
     return fmt(value, 2);
   }
 
-  return fmtPrice(value, exchangePrecision);
+  return fmtPrice(
+    value,
+    exchangePrecision
+  );
 }
 
-function pct(value: number, digits = 2) {
+function pct(
+  value: number,
+  digits = 2
+) {
   return `${fmt(value, digits)}%`;
 }
 
-function normalizeSymbol(symbol: string) {
-  return symbol
+function normalizeSearch(value: string) {
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+function normalizeSymbol(value: string) {
+  return value
     .toUpperCase()
     .trim()
     .replace("/", "-")
@@ -239,50 +389,15 @@ function normalizeSymbol(symbol: string) {
     .replace("-PERP", "");
 }
 
-function isTradFiSymbol(symbol: string) {
-  const s = symbol.toUpperCase();
-
-  const knownTradFi = [
-    "GOLD",
-    "SILVER",
-    "OIL",
-    "WTI",
-    "BRENT",
-    "TSLA",
-    "AAPL",
-    "MSFT",
-    "META",
-    "NVDA",
-    "GOOGL",
-    "AMZN",
-    "SPY",
-    "QQQ",
-    "SP500",
-    "NASDAQ",
-    "DOW",
-    "NIKKEI",
-    "EUR",
-    "GBP",
-    "JPY",
-    "AUD",
-    "CAD",
-    "CHF",
-    "NZD",
-    "HK",
-    "COPPER",
-    "COCOA",
-    "SOY",
-    "NATGAS",
-  ];
-
-  return knownTradFi.some((x) => s.includes(x));
-}
-
-async function apiGet<T>(url: string): Promise<T> {
+async function apiGet<T>(
+  url: string
+): Promise<T> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+    throw new Error(
+      `HTTP ${response.status}`
+    );
   }
 
   const data = await response.json();
@@ -292,31 +407,474 @@ async function apiGet<T>(url: string): Promise<T> {
     data.code !== 0
   ) {
     throw new Error(
-      data.msg || "BingX API error"
+      data.msg ||
+        "BingX API error"
     );
   }
 
   return data;
 }
 
+function contractMatches(
+  contract: Contract,
+  query: string
+) {
+  const normalizedQuery =
+    normalizeSearch(query);
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const values = [
+    contract.symbol,
+    contract.asset || "",
+    ...(contract.aliases || []),
+  ].map(normalizeSearch);
+
+  return values.some(
+    (value) =>
+      value.includes(
+        normalizedQuery
+      )
+  );
+}
+
+/* =========================================================
+   SHARE CARD
+   ========================================================= */
+
+function makeShareCanvas(data: {
+  symbol: string;
+
+  side: Side;
+  leverage: number;
+
+  entry: number;
+  stop: number;
+  takeProfit: number;
+
+  risk: number;
+  riskPercent: number;
+
+  positionSize: number;
+  margin: number;
+
+  profit: number;
+  rr: number;
+  fee: number;
+
+  pricePrecision?: number;
+}) {
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
+
+  canvas.width = 1080;
+  canvas.height = 1350;
+
+  const ctx =
+    canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error(
+      "Canvas unavailable"
+    );
+  }
+
+  const wine = "#68121e";
+  const green = "#173d3a";
+  const ink = "#2a1919";
+  const muted = "#7c6d69";
+  const paper = "#fbf6f2";
+
+  const accent =
+    data.side === "LONG"
+      ? green
+      : wine;
+
+  /* BACKGROUND */
+
+  ctx.fillStyle = paper;
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  /* marble */
+
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = wine;
+  ctx.lineWidth = 2;
+
+  for (
+    let index = 0;
+    index < 9;
+    index++
+  ) {
+    ctx.beginPath();
+
+    const y =
+      90 + index * 145;
+
+    ctx.moveTo(
+      -30,
+      y
+    );
+
+    ctx.bezierCurveTo(
+      250,
+      y - 80,
+      590,
+      y + 70,
+      1110,
+      y - 20
+    );
+
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
+
+  /* LOGO */
+
+  ctx.fillStyle = ink;
+
+  ctx.font =
+    "600 58px Georgia";
+
+  ctx.fillText(
+    "DO",
+    72,
+    105
+  );
+
+  ctx.font =
+    "600 34px Georgia";
+
+  ctx.fillText(
+    "TRADE CALCULATOR",
+    175,
+    88
+  );
+
+  ctx.fillStyle = muted;
+
+  ctx.font =
+    "400 22px Arial";
+
+  ctx.fillText(
+    "Расчёт сделки до входа",
+    177,
+    120
+  );
+
+  ctx.strokeStyle = "#dfd0ca";
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    70,
+    165
+  );
+
+  ctx.lineTo(
+    1010,
+    165
+  );
+
+  ctx.stroke();
+
+  /* HEAD */
+
+  ctx.fillStyle = ink;
+
+  ctx.font =
+    "600 26px Arial";
+
+  ctx.fillText(
+    "РАСЧЁТ СДЕЛКИ",
+    72,
+    230
+  );
+
+  ctx.font =
+    "700 48px Arial";
+
+  ctx.fillText(
+    data.symbol,
+    72,
+    310
+  );
+
+  ctx.fillStyle = accent;
+
+  ctx.font =
+    "700 34px Arial";
+
+  ctx.fillText(
+    `${data.side}  •  ${data.leverage}x`,
+    72,
+    365
+  );
+
+  /* LEVEL CARDS */
+
+  const cards = [
+    [
+      "ENTRY",
+      fmtPrice(
+        data.entry,
+        data.pricePrecision
+      ),
+    ],
+
+    [
+      "STOP LOSS",
+      fmtPrice(
+        data.stop,
+        data.pricePrecision
+      ),
+    ],
+
+    [
+      "TAKE PROFIT",
+      fmtPrice(
+        data.takeProfit,
+        data.pricePrecision
+      ),
+    ],
+  ];
+
+  let y = 455;
+
+  for (
+    const [label, value]
+    of cards
+  ) {
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#e4d5d0";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+      70,
+      y - 55,
+      940,
+      100,
+      18
+    );
+
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = muted;
+
+    ctx.font =
+      "600 20px Arial";
+
+    ctx.fillText(
+      label,
+      100,
+      y - 15
+    );
+
+    ctx.fillStyle = ink;
+
+    ctx.font =
+      "700 34px Arial";
+
+    ctx.textAlign = "right";
+
+    ctx.fillText(
+      value,
+      965,
+      y + 7
+    );
+
+    ctx.textAlign = "left";
+
+    y += 125;
+  }
+
+  /* PROFIT */
+
+  ctx.fillStyle = accent;
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    70,
+    810,
+    940,
+    185,
+    26
+  );
+
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+
+  ctx.font =
+    "500 22px Arial";
+
+  ctx.fillText(
+    "ПОТЕНЦИАЛЬНАЯ ПРИБЫЛЬ ПОСЛЕ КОМИССИИ",
+    105,
+    860
+  );
+
+  ctx.font =
+    "700 62px Arial";
+
+  ctx.fillText(
+    `+${fmt(
+      data.profit
+    )} USDT`,
+    105,
+    935
+  );
+
+  /* DETAILS */
+
+  ctx.fillStyle = ink;
+
+  ctx.font =
+    "700 25px Arial";
+
+  ctx.fillText(
+    `R:R   1 : ${fmt(
+      data.rr,
+      2
+    )}`,
+    75,
+    1065
+  );
+
+  ctx.fillText(
+    `Риск   ${fmt(
+      data.risk
+    )} USDT (${fmt(
+      data.riskPercent,
+      2
+    )}%)`,
+    75,
+    1110
+  );
+
+  ctx.font =
+    "500 22px Arial";
+
+  ctx.fillStyle = muted;
+
+  ctx.fillText(
+    `Размер позиции: ${fmt(
+      data.positionSize
+    )} USDT`,
+    75,
+    1170
+  );
+
+  ctx.fillText(
+    `Необходимая маржа: ${fmt(
+      data.margin
+    )} USDT`,
+    75,
+    1210
+  );
+
+  ctx.fillText(
+    `Ориентировочная комиссия: ${fmtSmallMoney(
+      data.fee
+    )} USDT`,
+    75,
+    1250
+  );
+
+  ctx.fillStyle = wine;
+
+  ctx.font =
+    "600 22px Georgia";
+
+  ctx.fillText(
+    "DASHA OZDEN • TRADE CALCULATOR",
+    75,
+    1310
+  );
+
+  return canvas;
+}
+
+/* =========================================================
+   APP
+   ========================================================= */
+
 export default function App() {
   const [market, setMarket] =
     useState<Market>("crypto");
 
-  const [contracts, setContracts] =
+  const [
+    tradfiCategory,
+    setTradfiCategory,
+  ] =
+    useState<TradFiCategory>(
+      "all"
+    );
+
+  const [
+    contracts,
+    setContracts,
+  ] =
     useState<Contract[]>([]);
 
   const [query, setQuery] =
     useState("BTC");
 
-  const [selected, setSelected] =
-    useState<Contract>(fallbackCrypto[0]);
+  const [
+    selected,
+    setSelected,
+  ] =
+    useState<Contract>(
+      fallbackCrypto[0]
+    );
 
-  const [suggestionsOpen, setSuggestionsOpen] =
+  const [
+    suggestionsOpen,
+    setSuggestionsOpen,
+  ] =
     useState(false);
 
+  /* STRING STATES */
+
   const [price, setPrice] =
-    useState(112438.2);
+    useState("112438.20");
+
+  const [balance, setBalance] =
+    useState("10000");
+
+  const [
+    riskPercent,
+    setRiskPercent,
+  ] =
+    useState("1");
+
+  const [entry, setEntry] =
+    useState("110000");
+
+  const [stop, setStop] =
+    useState("107800");
+
+  const [
+    takeProfit,
+    setTakeProfit,
+  ] =
+    useState("116600");
 
   const [live, setLive] =
     useState(true);
@@ -324,121 +882,162 @@ export default function App() {
   const [side, setSide] =
     useState<Side>("LONG");
 
-  const [balance, setBalance] =
-    useState(10000);
-
-  const [riskPercent, setRiskPercent] =
-    useState(1);
-
-  const [entry, setEntry] =
-    useState(110000);
-
-  const [stop, setStop] =
-    useState(107800);
-
-  const [takeProfit, setTakeProfit] =
-    useState(116600);
-
-  const [leverage, setLeverage] =
+  const [
+    leverage,
+    setLeverage,
+  ] =
     useState(10);
 
-  const [feeSide] =
+  const [
+    feeSide,
+    setFeeSide,
+  ] =
     useState<FeeSide>("Taker");
 
-  const [manualPrice, setManualPrice] =
+  const [
+    manualPrice,
+    setManualPrice,
+  ] =
     useState(false);
 
   const [saved, setSaved] =
     useState(false);
 
-  const [, setLoadingContracts] =
-    useState(false);
-
-  const [apiMessage, setApiMessage] =
+  const [
+    apiMessage,
+    setApiMessage,
+  ] =
     useState("");
 
-  /*
-   * Базовые значения риска.
-   */
+  const [
+    instructionsOpen,
+    setInstructionsOpen,
+  ] =
+    useState(false);
+
+  const [
+    shareOpen,
+    setShareOpen,
+  ] =
+    useState(false);
+
+  const sharePreviewRef =
+    useRef<HTMLCanvasElement | null>(
+      null
+    );
+
+  /* NUMBERS */
+
+  const balanceN =
+    toNumber(balance);
+
+  const riskPercentN =
+    toNumber(riskPercent);
+
+  const entryN =
+    toNumber(entry);
+
+  const stopN =
+    toNumber(stop);
+
+  const takeProfitN =
+    toNumber(takeProfit);
+
+  const priceN =
+    toNumber(price);
+
+  /* RISK */
+
   const riskAmount =
-    balance * riskPercent / 100;
+    balanceN *
+    riskPercentN /
+    100;
 
   const stopDistance =
-    Math.abs(entry - stop);
+    Math.abs(
+      entryN -
+      stopN
+    );
 
   const stopDistancePct =
-    entry > 0
-      ? stopDistance / entry
+    entryN > 0
+      ? stopDistance /
+        entryN
       : 0;
 
   const tpDistance =
-    Math.abs(takeProfit - entry);
+    Math.abs(
+      takeProfitN -
+      entryN
+    );
 
   const tpDistancePct =
-    entry > 0
-      ? tpDistance / entry
+    entryN > 0
+      ? tpDistance /
+        entryN
       : 0;
 
-  /*
-   * Комиссия конкретного инструмента BingX.
-   */
+  /* FEE */
+
   const feeRate =
     feeSide === "Maker"
-      ? selected.makerFeeRate ?? 0.0002
-      : selected.takerFeeRate ?? 0.0005;
+      ? selected.makerFeeRate ??
+        0.0002
+      : selected.takerFeeRate ??
+        0.0005;
 
   /*
-   * РИСК НА 1 ЕДИНИЦУ АКТИВА.
-   *
-   * Теперь сюда включаем:
-   * 1. движение Entry -> Stop;
-   * 2. комиссию открытия;
-   * 3. комиссию закрытия по Stop Loss.
+   * В риск уже включаем
+   * ориентировочную комиссию
+   * вход + выход по стопу.
    */
+
   const feePerUnitToStop =
-    entry * feeRate +
-    stop * feeRate;
+    entryN * feeRate +
+    stopN * feeRate;
 
   const riskPerUnit =
-    stopDistance + feePerUnitToStop;
+    stopDistance +
+    feePerUnitToStop;
 
-  /*
-   * Количество рассчитываем так,
-   * чтобы полный убыток вместе с комиссией
-   * был максимально близок к riskAmount.
-   */
   const quantity =
     riskPerUnit > 0
-      ? riskAmount / riskPerUnit
+      ? riskAmount /
+        riskPerUnit
       : 0;
 
   const positionSize =
-    quantity * entry;
+    quantity * entryN;
 
   const margin =
     leverage > 0
-      ? positionSize / leverage
+      ? positionSize /
+        leverage
       : 0;
 
-  /*
-   * Реальные ориентировочные комиссии.
-   */
   const entryFee =
-    positionSize * feeRate;
+    positionSize *
+    feeRate;
 
   const stopExitFee =
-    quantity * stop * feeRate;
+    quantity *
+    stopN *
+    feeRate;
 
   const tpExitFee =
-    quantity * takeProfit * feeRate;
+    quantity *
+    takeProfitN *
+    feeRate;
 
   const estimatedLoss =
-    quantity * stopDistance +
+    quantity *
+      stopDistance +
     entryFee +
     stopExitFee;
 
   const grossProfit =
-    quantity * tpDistance;
+    quantity *
+    tpDistance;
 
   const netProfit =
     Math.max(
@@ -448,90 +1047,103 @@ export default function App() {
         tpExitFee
     );
 
-  /*
-   * R:R считаем уже на фактическом риске
-   * и чистой ориентировочной прибыли.
-   */
   const rr =
     estimatedLoss > 0
-      ? netProfit / estimatedLoss
+      ? netProfit /
+        estimatedLoss
       : 0;
 
-  const activeContracts = useMemo(() => {
-    const source =
-      contracts.length
-        ? contracts
-        : market === "crypto"
-          ? fallbackCrypto
-          : fallbackTradfi;
+  const roundTripFeeToTp =
+    entryFee +
+    tpExitFee;
 
-    return source.filter((c) => {
-      const tradfi =
-        isTradFiSymbol(c.symbol);
+  /* CONTRACT LIST */
 
-      return market === "tradfi"
-        ? tradfi
-        : !tradfi;
-    });
-  }, [contracts, market]);
+  const filteredContracts =
+    useMemo(() => {
+      const source =
+        contracts.length
+          ? contracts
+          : market ===
+              "crypto"
+            ? fallbackCrypto
+            : fallbackTradFi;
 
-  const suggestions = useMemo(() => {
-    const q =
-      query.trim().toUpperCase();
+      return source.filter(
+        (contract) => {
+          if (
+            contract.marketType &&
+            contract.marketType !==
+              market
+          ) {
+            return false;
+          }
 
-    return activeContracts
-      .filter((c) => {
-        return (
-          c.symbol
-            .replace("-USDT", "")
-            .includes(q) ||
-          c.symbol.includes(q)
-        );
-      })
-      .slice(0, 8);
-  }, [activeContracts, query]);
+          if (
+            market ===
+              "tradfi" &&
+            tradfiCategory !==
+              "all"
+          ) {
+            return (
+              contract.tradfiCategory ===
+              tradfiCategory
+            );
+          }
+
+          return true;
+        }
+      );
+    }, [
+      contracts,
+      market,
+      tradfiCategory,
+    ]);
+
+  const suggestions =
+    useMemo(() => {
+      return filteredContracts
+        .filter((contract) =>
+          contractMatches(
+            contract,
+            query
+          )
+        )
+        .slice(0, 12);
+    }, [
+      filteredContracts,
+      query,
+    ]);
+
+  /* API */
 
   async function loadContracts() {
-    setLoadingContracts(true);
     setApiMessage("");
 
     try {
       const result =
         await apiGet<{
           data: Contract[];
-        }>("/api/bingx?action=contracts");
+        }>(
+          "/api/bingx?action=contracts"
+        );
 
       const list =
-        Array.isArray(result.data)
+        Array.isArray(
+          result.data
+        )
           ? result.data
           : [];
 
       setContracts(list);
 
-      const current =
-        list.find(
-          (c) =>
-            normalizeSymbol(c.symbol) ===
-            normalizeSymbol(
-              selected.symbol
-            )
-        );
-
-      if (current) {
-        setSelected(current);
-      }
-
       setApiMessage(
         "Данные BingX обновлены"
       );
     } catch {
-      setContracts([]);
-
       setApiMessage(
-        "BingX пока недоступен — используются базовые данные. Цена и тикер можно изменить вручную."
+        "BingX пока недоступен — можно продолжить с ручным вводом."
       );
-    } finally {
-      setLoadingContracts(false);
     }
   }
 
@@ -546,6 +1158,7 @@ export default function App() {
           data: {
             lastPrice?: string;
             markPrice?: string;
+            price?: string;
           };
         }>(
           "/api/bingx?action=ticker&symbol=" +
@@ -556,40 +1169,59 @@ export default function App() {
             )
         );
 
-      const next = n(
-        result.data?.lastPrice ||
-          result.data?.markPrice ||
-          0
-      );
-
-      if (
-        next > 0 &&
-        !manualPrice
-      ) {
-        setPrice(next);
-        setEntry(next);
-
-        const stopPct = 0.02;
-        const tpPct = 0.06;
-
-        setStop(
-          next *
-            (side === "LONG"
-              ? 1 - stopPct
-              : 1 + stopPct)
+      const next =
+        toNumber(
+          result.data
+            ?.lastPrice ||
+            result.data
+              ?.markPrice ||
+            result.data?.price ||
+            "0"
         );
-
-        setTakeProfit(
-          next *
-            (side === "LONG"
-              ? 1 + tpPct
-              : 1 - tpPct)
-        );
-      }
-
-      setLive(next > 0);
 
       if (next > 0) {
+        setPrice(
+          String(next)
+        );
+
+        setLive(true);
+
+        if (!manualPrice) {
+          setEntry(
+            String(next)
+          );
+
+          const stopPct =
+            0.02;
+
+          const tpPct =
+            0.06;
+
+          setStop(
+            String(
+              next *
+                (side ===
+                "LONG"
+                  ? 1 -
+                    stopPct
+                  : 1 +
+                    stopPct)
+            )
+          );
+
+          setTakeProfit(
+            String(
+              next *
+                (side ===
+                "LONG"
+                  ? 1 +
+                    tpPct
+                  : 1 -
+                    tpPct)
+            )
+          );
+        }
+
         setApiMessage(
           "LIVE • цена BingX"
         );
@@ -598,71 +1230,38 @@ export default function App() {
       setLive(false);
 
       setApiMessage(
-        "Не удалось получить цену BingX. Вы по-прежнему можете ввести цену вручную."
+        "Не удалось получить цену BingX. Цена и параметры сделки доступны для ручного ввода."
       );
     }
   }
 
   useEffect(() => {
-    loadContracts();
+    void loadContracts();
+  }, []);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (
+      market === "crypto"
+    ) {
+      setSelected(
+        fallbackCrypto[0]
+      );
+
+      setQuery("BTC");
+    } else {
+      setSelected(
+        fallbackTradFi[0]
+      );
+
+      setQuery("GOLD");
+    }
+
+    setSuggestionsOpen(
+      false
+    );
   }, [market]);
 
-  useEffect(() => {
-    if (selected) {
-      setQuery(
-        selected.symbol.replace(
-          /-USDT$/i,
-          ""
-        )
-      );
-
-      if (!manualPrice) {
-        loadTicker(selected);
-      }
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected]);
-
-  function selectContract(
-    contract: Contract
-  ) {
-    setSelected(contract);
-    setSuggestionsOpen(false);
-    setManualPrice(false);
-  }
-
-  function changeSide(next: Side) {
-    setSide(next);
-
-    const stopPct = 0.02;
-    const tpPct = 0.06;
-
-    setStop(
-      entry *
-        (next === "LONG"
-          ? 1 - stopPct
-          : 1 + stopPct)
-    );
-
-    setTakeProfit(
-      entry *
-        (next === "LONG"
-          ? 1 + tpPct
-          : 1 - tpPct)
-    );
-  }
-
-  function saveDeal() {
-    setSaved(true);
-
-    window.setTimeout(
-      () => setSaved(false),
-      1800
-    );
-  }
+  /* MAX LEVERAGE */
 
   const maxLeverage =
     side === "LONG"
@@ -671,10 +1270,153 @@ export default function App() {
       : selected.maxShortLeverage ??
         125;
 
-  const positionLabel =
-    market === "crypto"
-      ? "Бессрочные фьючерсы"
-      : "TradFi • бессрочные фьючерсы";
+  useEffect(() => {
+    if (
+      leverage >
+      maxLeverage
+    ) {
+      setLeverage(
+        maxLeverage
+      );
+    }
+  }, [
+    selected,
+    side,
+    leverage,
+    maxLeverage,
+  ]);
+
+  function selectContract(
+    contract: Contract
+  ) {
+    setSelected(
+      contract
+    );
+
+    setQuery(
+      (
+        contract.asset ||
+        contract.symbol.replace(
+          /-USDT$/i,
+          ""
+        )
+      ).toUpperCase()
+    );
+
+    setSuggestionsOpen(
+      false
+    );
+
+    setManualPrice(
+      false
+    );
+
+    void loadTicker(
+      contract
+    );
+  }
+
+  function changeSide(
+    next: Side
+  ) {
+    setSide(next);
+
+    if (entryN <= 0) {
+      return;
+    }
+
+    const stopPct =
+      0.02;
+
+    const tpPct =
+      0.06;
+
+    setStop(
+      String(
+        entryN *
+          (next ===
+          "LONG"
+            ? 1 -
+              stopPct
+            : 1 +
+              stopPct)
+      )
+    );
+
+    setTakeProfit(
+      String(
+        entryN *
+          (next ===
+          "LONG"
+            ? 1 +
+              tpPct
+            : 1 -
+              tpPct)
+      )
+    );
+  }
+
+  function reset() {
+    setBalance(
+      "10000"
+    );
+
+    setRiskPercent(
+      "1"
+    );
+
+    setEntry(price);
+
+    if (priceN > 0) {
+      setStop(
+        String(
+          priceN *
+            (side ===
+            "LONG"
+              ? 0.98
+              : 1.02)
+        )
+      );
+
+      setTakeProfit(
+        String(
+          priceN *
+            (side ===
+            "LONG"
+              ? 1.06
+              : 0.94)
+        )
+      );
+    } else {
+      setStop("");
+      setTakeProfit("");
+    }
+
+    setLeverage(
+      Math.min(
+        10,
+        maxLeverage
+      )
+    );
+  }
+
+  function saveDeal() {
+    setSaved(true);
+
+    window.setTimeout(
+      () =>
+        setSaved(false),
+      1600
+    );
+  }
+
+  const pricePrecision =
+    selected.pricePrecision ??
+    2;
+
+  const quantityPrecision =
+    selected.quantityPrecision ??
+    4;
 
   const displaySymbol =
     selected.asset ||
@@ -683,11 +1425,150 @@ export default function App() {
       ""
     );
 
-  const pricePrecision =
-    selected.pricePrecision ?? 2;
+  const positionLabel =
+    market === "crypto"
+      ? "Бессрочные фьючерсы"
+      : "TradFi • бессрочные фьючерсы / CFD";
 
-  const quantityPrecision =
-    selected.quantityPrecision ?? 4;
+  /* SHARE */
+
+  function buildShareCanvas() {
+    return makeShareCanvas({
+      symbol:
+        displaySymbol,
+
+      side,
+      leverage,
+
+      entry: entryN,
+      stop: stopN,
+      takeProfit:
+        takeProfitN,
+
+      risk:
+        estimatedLoss,
+
+      riskPercent:
+        riskPercentN,
+
+      positionSize,
+      margin,
+
+      profit:
+        netProfit,
+
+      rr,
+
+      fee:
+        roundTripFeeToTp,
+
+      pricePrecision,
+    });
+  }
+
+  function openShare() {
+    setShareOpen(true);
+
+    window.setTimeout(
+      () => {
+        const preview =
+          sharePreviewRef.current;
+
+        if (!preview) {
+          return;
+        }
+
+        const source =
+          buildShareCanvas();
+
+        preview.width =
+          source.width;
+
+        preview.height =
+          source.height;
+
+        preview
+          .getContext("2d")
+          ?.drawImage(
+            source,
+            0,
+            0
+          );
+      },
+      50
+    );
+  }
+
+  function downloadShareImage() {
+    const canvas =
+      buildShareCanvas();
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.download =
+      `trade-calculator-${displaySymbol}-${side}.png`;
+
+    link.href =
+      canvas.toDataURL(
+        "image/png"
+      );
+
+    link.click();
+  }
+
+  async function nativeShare() {
+    const canvas =
+      buildShareCanvas();
+
+    const blob =
+      await new Promise<Blob | null>(
+        (resolve) =>
+          canvas.toBlob(
+            resolve,
+            "image/png"
+          )
+      );
+
+    if (!blob) {
+      return;
+    }
+
+    const file =
+      new File(
+        [blob],
+        `trade-calculator-${displaySymbol}.png`,
+        {
+          type: "image/png",
+        }
+      );
+
+    if (
+      navigator.share &&
+      navigator.canShare?.({
+        files: [file],
+      })
+    ) {
+      await navigator.share({
+        title:
+          `Расчёт ${displaySymbol}`,
+
+        text:
+          `Trade Calculator: ${displaySymbol} ${side}, R:R 1:${fmt(
+            rr,
+            2
+          )}`,
+
+        files: [file],
+      });
+    } else {
+      downloadShareImage();
+    }
+  }
+
+  /* ===================================================== */
 
   return (
     <div className="site">
@@ -728,55 +1609,119 @@ export default function App() {
           >
             {saved
               ? "Сделка сохранена"
-              : "Сохраненные сделки"}{" "}
+              : "Сохраненные сделки"}
+
             <span>♡</span>
           </button>
         </nav>
       </header>
 
       <main className="container">
-        <section className="market-tabs">
+        {/* MARKET */}
+
+        <section className="market-tabs market-tabs-v2">
           <button
             className={
               market === "crypto"
-                ? "active"
-                : ""
+                ? "active crypto-tab"
+                : "crypto-tab"
             }
             onClick={() =>
-              setMarket("crypto")
+              setMarket(
+                "crypto"
+              )
             }
           >
             <span className="tab-icon">
               ⌁
-            </span>{" "}
-            CRYPTO
+            </span>
+
+            <span>
+              <b>CRYPTO</b>
+
+              <small>
+                Бессрочные фьючерсы
+              </small>
+            </span>
           </button>
 
           <button
             className={
               market === "tradfi"
-                ? "active"
-                : ""
+                ? "active tradfi-tab"
+                : "tradfi-tab"
             }
             onClick={() =>
-              setMarket("tradfi")
+              setMarket(
+                "tradfi"
+              )
             }
           >
             <span className="tab-icon">
               ◌
-            </span>{" "}
-            TRADFI
+            </span>
+
+            <span>
+              <b>TRADFI</b>
+
+              <small>
+                Forex • акции • индексы • металлы • сырьё
+              </small>
+            </span>
           </button>
         </section>
+
+        {market ===
+          "tradfi" && (
+          <section className="tradfi-categories">
+            {(
+              Object.keys(
+                categoryNames
+              ) as TradFiCategory[]
+            ).map(
+              (category) => (
+                <button
+                  key={
+                    category
+                  }
+                  className={
+                    tradfiCategory ===
+                    category
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setTradfiCategory(
+                      category
+                    )
+                  }
+                >
+                  {
+                    categoryNames[
+                      category
+                    ]
+                  }
+                </button>
+              )
+            )}
+          </section>
+        )}
+
+        {/* CALCULATOR */}
 
         <section
           id="calculator"
           className="calculator-shell"
         >
+          {/* LEFT */}
+
           <div className="left-panel">
+            {/* ACCOUNT */}
+
             <div className="form-section">
               <div className="section-title">
-                <b>01.</b> СЧЕТ
+                <b>01.</b>{" "}
+                СЧЕТ
               </div>
 
               <div className="field-row">
@@ -785,7 +1730,9 @@ export default function App() {
                 </label>
 
                 <div className="select-like">
-                  USDT <span>⌄</span>
+                  USDT
+
+                  <span>⌄</span>
                 </div>
               </div>
 
@@ -794,22 +1741,16 @@ export default function App() {
                   Депозит
                 </label>
 
-                <div className="input-suffix">
-                  <input
-                    type="number"
-                    value={balance}
-                    onChange={(e) =>
-                      setBalance(
-                        n(
-                          e.target
-                            .value
-                        )
-                      )
-                    }
-                  />
-
-                  <span>USDT</span>
-                </div>
+                <NumericInput
+                  value={
+                    balance
+                  }
+                  onChange={
+                    setBalance
+                  }
+                  suffix="USDT"
+                  min={0}
+                />
               </div>
 
               <div className="field-row">
@@ -817,23 +1758,17 @@ export default function App() {
                   Риск на сделку
                 </label>
 
-                <div className="input-suffix">
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={riskPercent}
-                    onChange={(e) =>
-                      setRiskPercent(
-                        n(
-                          e.target
-                            .value
-                        )
-                      )
-                    }
-                  />
-
-                  <span>%</span>
-                </div>
+                <NumericInput
+                  value={
+                    riskPercent
+                  }
+                  onChange={
+                    setRiskPercent
+                  }
+                  suffix="%"
+                  min={0}
+                  step="0.1"
+                />
               </div>
 
               <div className="risk-card">
@@ -842,19 +1777,29 @@ export default function App() {
                 </span>
 
                 <strong>
-                  {fmt(
-                    riskAmount
-                  )}{" "}
+                  {balance ===
+                    "" ||
+                  riskPercent ===
+                    ""
+                    ? "—"
+                    : fmt(
+                        riskAmount
+                      )}
+
                   <small>
+                    {" "}
                     USDT
                   </small>
                 </strong>
               </div>
             </div>
 
+            {/* TRADE */}
+
             <div className="form-section trade-section">
               <div className="section-title">
-                <b>02.</b> ТОРГОВЛЯ
+                <b>02.</b>{" "}
+                ТОРГОВЛЯ
               </div>
 
               <div className="field-label">
@@ -899,12 +1844,18 @@ export default function App() {
                 {positionLabel}
               </div>
 
+              {/* TICKER */}
+
               <div className="ticker-wrap">
                 <input
-                  value={query}
-                  onChange={(e) => {
+                  value={
+                    query
+                  }
+                  onChange={(
+                    event
+                  ) => {
                     setQuery(
-                      e.target.value.toUpperCase()
+                      event.target.value.toUpperCase()
                     );
 
                     setSuggestionsOpen(
@@ -916,57 +1867,85 @@ export default function App() {
                       true
                     )
                   }
-                  placeholder="BTC"
+                  placeholder={
+                    market ===
+                    "crypto"
+                      ? "BTC"
+                      : "GOLD / NVDA / EURUSD"
+                  }
                 />
 
                 <span className="exchange">
-                  BingX <b>⌄</b>
+                  BingX{" "}
+                  <b>⌄</b>
                 </span>
 
-                {suggestionsOpen &&
-                  suggestions.length >
-                    0 && (
-                    <div className="suggestions">
-                      {suggestions.map(
-                        (c) => (
+                {suggestionsOpen && (
+                  <div className="suggestions">
+                    {suggestions.length >
+                    0 ? (
+                      suggestions.map(
+                        (
+                          contract
+                        ) => (
                           <button
                             key={
-                              c.symbol
+                              contract.symbol
                             }
                             onMouseDown={(
-                              e
+                              event
                             ) =>
-                              e.preventDefault()
+                              event.preventDefault()
                             }
                             onClick={() =>
                               selectContract(
-                                c
+                                contract
                               )
                             }
                           >
-                            <strong>
-                              {c.symbol.replace(
-                                /-USDT$/i,
-                                ""
-                              )}
-                            </strong>
+                            <span>
+                              <strong>
+                                {contract.asset ||
+                                  contract.symbol.replace(
+                                    /-USDT$/i,
+                                    ""
+                                  )}
+                              </strong>
+
+                              <small>
+                                {contract.tradfiCategory
+                                  ? categoryNames[
+                                      contract
+                                        .tradfiCategory
+                                    ]
+                                  : "Crypto"}
+                              </small>
+                            </span>
 
                             <span>
                               {
-                                c.symbol
+                                contract.symbol
                               }
                             </span>
                           </button>
                         )
-                      )}
-                    </div>
-                  )}
+                      )
+                    ) : (
+                      <div className="no-suggestions">
+                        Совпадений не найдено
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* LIVE PRICE */}
 
               <div className="live-price">
                 <div>
                   <span>
-                    Текущая цена{" "}
+                    Текущая цена
+
                     <em>
                       {live
                         ? "LIVE"
@@ -975,11 +1954,15 @@ export default function App() {
                   </span>
 
                   <strong>
-                    {fmtPrice(
-                      price,
-                      pricePrecision
-                    )}{" "}
+                    {price === ""
+                      ? "—"
+                      : fmtPrice(
+                          priceN,
+                          pricePrecision
+                        )}
+
                     <small>
+                      {" "}
                       USDT
                     </small>
                   </strong>
@@ -989,7 +1972,7 @@ export default function App() {
                   <button
                     title="Обновить"
                     onClick={() =>
-                      loadTicker(
+                      void loadTicker(
                         selected
                       )
                     }
@@ -998,39 +1981,43 @@ export default function App() {
                   </button>
 
                   <button
-                    title="Изменить"
-                    onClick={() => {
+                    title="Ручной ввод"
+                    onClick={() =>
                       setManualPrice(
                         true
-                      );
-                    }}
+                      )
+                    }
                   >
-                    ⌕
+                    ✎
                   </button>
                 </div>
               </div>
+
+              {/* LEVELS */}
 
               <div className="field-row">
                 <label>
                   Цена входа
                 </label>
 
-                <div className="input-suffix">
-                  <input
-                    type="number"
-                    value={entry}
-                    onChange={(e) =>
-                      setEntry(
-                        n(
-                          e.target
-                            .value
-                        )
-                      )
-                    }
-                  />
+                <NumericInput
+                  value={
+                    entry
+                  }
+                  onChange={(
+                    value
+                  ) => {
+                    setEntry(
+                      value
+                    );
 
-                  <span>USDT</span>
-                </div>
+                    setManualPrice(
+                      true
+                    );
+                  }}
+                  suffix="USDT"
+                  min={0}
+                />
               </div>
 
               <div className="field-row">
@@ -1038,22 +2025,16 @@ export default function App() {
                   Stop Loss
                 </label>
 
-                <div className="input-suffix">
-                  <input
-                    type="number"
-                    value={stop}
-                    onChange={(e) =>
-                      setStop(
-                        n(
-                          e.target
-                            .value
-                        )
-                      )
-                    }
-                  />
-
-                  <span>USDT</span>
-                </div>
+                <NumericInput
+                  value={
+                    stop
+                  }
+                  onChange={
+                    setStop
+                  }
+                  suffix="USDT"
+                  min={0}
+                />
               </div>
 
               <div className="field-row">
@@ -1061,89 +2042,87 @@ export default function App() {
                   Take Profit
                 </label>
 
-                <div className="input-suffix">
-                  <input
-                    type="number"
-                    value={takeProfit}
-                    onChange={(e) =>
-                      setTakeProfit(
-                        n(
-                          e.target
-                            .value
-                        )
-                      )
-                    }
-                  />
-
-                  <span>USDT</span>
-                </div>
+                <NumericInput
+                  value={
+                    takeProfit
+                  }
+                  onChange={
+                    setTakeProfit
+                  }
+                  suffix="USDT"
+                  min={0}
+                />
               </div>
 
-              <div className="field-row">
-                <label>
-                  Плечо
-                </label>
+              {/* LEVERAGE */}
 
-                <div className="select-like">
-                  <select
-                    value={leverage}
-                    onChange={(e) =>
-                      setLeverage(
-                        n(
-                          e.target
-                            .value
-                        )
+              <div className="leverage-block">
+                <div className="leverage-head">
+                  <label>
+                    Плечо
+                  </label>
+
+                  <strong>
+                    {leverage}x
+                  </strong>
+                </div>
+
+                <input
+                  className="leverage-range"
+                  type="range"
+                  min="1"
+                  max={Math.max(
+                    1,
+                    maxLeverage
+                  )}
+                  step="1"
+                  value={Math.min(
+                    leverage,
+                    maxLeverage
+                  )}
+                  onChange={(
+                    event
+                  ) =>
+                    setLeverage(
+                      Number(
+                        event
+                          .target
+                          .value
                       )
+                    )
+                  }
+                />
+
+                <div className="leverage-scale">
+                  <span>
+                    1x
+                  </span>
+
+                  <span>
+                    {
+                      maxLeverage
                     }
-                  >
-                    {[
-                      1,
-                      2,
-                      3,
-                      5,
-                      10,
-                      15,
-                      20,
-                      25,
-                      50,
-                      75,
-                      100,
-                      125,
-                    ]
-                      .filter(
-                        (x) =>
-                          x <=
-                          maxLeverage
-                      )
-                      .map((x) => (
-                        <option
-                          key={x}
-                          value={x}
-                        >
-                          {x}x
-                        </option>
-                      ))}
-                  </select>
-
-                  <span>⌄</span>
+                    x
+                  </span>
                 </div>
               </div>
 
               <button className="advanced">
                 › &nbsp;
-                Дополнительные
-                параметры
+                Дополнительные параметры
               </button>
 
               <div className="calculate-row">
                 <button
                   className="calculate"
                   onClick={() =>
-                    window.scrollTo({
-                      top: 300,
-                      behavior:
-                        "smooth",
-                    })
+                    window.scrollTo(
+                      {
+                        top: 300,
+                        behavior:
+                          "smooth",
+                      }
+                    )
                   }
                 >
                   РАССЧИТАТЬ
@@ -1151,31 +2130,9 @@ export default function App() {
 
                 <button
                   className="reset"
-                  onClick={() => {
-                    setBalance(
-                      10000
-                    );
-
-                    setRiskPercent(
-                      1
-                    );
-
-                    setEntry(price);
-
-                    setStop(
-                      price *
-                        0.98
-                    );
-
-                    setTakeProfit(
-                      price *
-                        1.06
-                    );
-
-                    setLeverage(
-                      10
-                    );
-                  }}
+                  onClick={
+                    reset
+                  }
                 >
                   ↻
                 </button>
@@ -1183,22 +2140,40 @@ export default function App() {
             </div>
           </div>
 
+          {/* RIGHT */}
+
           <div className="right-panel">
             <div className="results-head">
               <div className="section-title">
                 РЕЗУЛЬТАТЫ
               </div>
 
-              <button
-                className="save-small"
-                onClick={saveDeal}
-              >
-                {saved
-                  ? "Сохранено"
-                  : "Сохранить сделку"}{" "}
-                ♡
-              </button>
+              <div className="result-actions">
+                <button
+                  className="share-small"
+                  onClick={
+                    openShare
+                  }
+                >
+                  Поделиться ↗
+                </button>
+
+                <button
+                  className="save-small"
+                  onClick={
+                    saveDeal
+                  }
+                >
+                  {saved
+                    ? "Сохранено"
+                    : "Сохранить сделку"}
+
+                  {" "}♡
+                </button>
+              </div>
             </div>
+
+            {/* BIG RESULTS */}
 
             <div className="big-results">
               <div>
@@ -1231,9 +2206,9 @@ export default function App() {
                 <small>
                   USDT
                   <br />
+
                   {pct(
-                    riskPercent,
-                    2
+                    riskPercentN
                   )}{" "}
                   от депозита
                 </small>
@@ -1241,8 +2216,7 @@ export default function App() {
 
               <div>
                 <span>
-                  ПОТЕНЦИАЛЬНАЯ
-                  ПРИБЫЛЬ
+                  ПОТЕНЦИАЛЬНАЯ ПРИБЫЛЬ
                 </span>
 
                 <strong>
@@ -1254,10 +2228,11 @@ export default function App() {
                 <small>
                   USDT
                   <br />
+
                   {pct(
                     (netProfit /
                       Math.max(
-                        balance,
+                        balanceN,
                         1
                       )) *
                       100
@@ -1267,9 +2242,13 @@ export default function App() {
               </div>
             </div>
 
+            {/* MINI RESULTS */}
+
             <div className="mini-results">
               <div>
-                <span>R:R</span>
+                <span>
+                  R:R
+                </span>
 
                 <strong>
                   1 :{" "}
@@ -1288,8 +2267,10 @@ export default function App() {
                 <strong>
                   {fmt(
                     margin
-                  )}{" "}
+                  )}
+
                   <small>
+                    {" "}
                     USDT
                   </small>
                 </strong>
@@ -1297,16 +2278,17 @@ export default function App() {
 
               <div>
                 <span>
-                  Комиссия
-                  (ориент.)
+                  Комиссия (ориент.)
                 </span>
 
                 <strong>
                   {fmtSmallMoney(
-                    entryFee,
+                    roundTripFeeToTp,
                     pricePrecision
-                  )}{" "}
+                  )}
+
                   <small>
+                    {" "}
                     USDT
                   </small>
                 </strong>
@@ -1326,6 +2308,8 @@ export default function App() {
               </div>
             </div>
 
+            {/* MAP */}
+
             <div className="chart-card">
               <div className="price-chart">
                 <div
@@ -1337,9 +2321,10 @@ export default function App() {
                   <span>
                     Take Profit
                     <br />
+
                     <b>
                       {fmtPrice(
-                        takeProfit,
+                        takeProfitN,
                         pricePrecision
                       )}
                     </b>
@@ -1357,9 +2342,10 @@ export default function App() {
                   <span>
                     Entry
                     <br />
+
                     <b>
                       {fmtPrice(
-                        entry,
+                        entryN,
                         pricePrecision
                       )}
                     </b>
@@ -1377,9 +2363,10 @@ export default function App() {
                   <span>
                     Stop Loss
                     <br />
+
                     <b>
                       {fmtPrice(
-                        stop,
+                        stopN,
                         pricePrecision
                       )}
                     </b>
@@ -1402,6 +2389,7 @@ export default function App() {
                   )}{" "}
                   USDT
                   <br />
+
                   <b>
                     +
                     {pct(
@@ -1423,9 +2411,10 @@ export default function App() {
                 >
                   ENTRY
                   <br />
+
                   <b>
                     {fmtPrice(
-                      entry,
+                      entryN,
                       pricePrecision
                     )}{" "}
                     USDT
@@ -1444,11 +2433,11 @@ export default function App() {
                   )}{" "}
                   USDT
                   <br />
+
                   <b>
                     -
                     {pct(
-                      riskPercent,
-                      2
+                      riskPercentN
                     )}
                   </b>
                 </div>
@@ -1484,6 +2473,8 @@ export default function App() {
                 </span>
               </div>
             </div>
+
+            {/* DETAILS */}
 
             <div className="details-card">
               <h4>
@@ -1545,8 +2536,7 @@ export default function App() {
 
                 <div>
                   <span>
-                    Стоимость
-                    позиции
+                    Стоимость позиции
                   </span>
 
                   <b>
@@ -1591,9 +2581,38 @@ export default function App() {
                     Тип комиссии
                   </span>
 
-                  <b>
-                    {feeSide} /{" "}
-                    {feeSide}
+                  <b className="fee-switch">
+                    <button
+                      className={
+                        feeSide ===
+                        "Taker"
+                          ? "active"
+                          : ""
+                      }
+                      onClick={() =>
+                        setFeeSide(
+                          "Taker"
+                        )
+                      }
+                    >
+                      Taker
+                    </button>
+
+                    <button
+                      className={
+                        feeSide ===
+                        "Maker"
+                          ? "active"
+                          : ""
+                      }
+                      onClick={() =>
+                        setFeeSide(
+                          "Maker"
+                        )
+                      }
+                    >
+                      Maker
+                    </button>
                   </b>
                 </div>
               </div>
@@ -1611,28 +2630,14 @@ export default function App() {
                 </strong>
 
                 <span>
-                  Комиссия зависит
-                  от выбранного
-                  инструмента и
-                  типа ордера.
+                  Комиссия зависит от выбранного инструмента и типа ордера.
                 </span>
               </div>
-
-              <small>
-                Обновлено:{" "}
-                {new Date().toLocaleTimeString(
-                  "ru-RU",
-                  {
-                    hour: "2-digit",
-                    minute:
-                      "2-digit",
-                  }
-                )}{" "}
-                &nbsp; ↻
-              </small>
             </div>
           </div>
         </section>
+
+        {/* HOW */}
 
         <section className="how-section">
           <h2>
@@ -1647,18 +2652,21 @@ export default function App() {
                 "Введите депозит, риск и параметры сделки",
                 "☑",
               ],
+
               [
                 "02",
                 "МЫ РАССЧИТАЕМ",
                 "Калькулятор автоматически рассчитает позицию и риск",
                 "◉",
               ],
+
               [
                 "03",
                 "АНАЛИЗИРУЙТЕ",
                 "Оцените соотношение риска к прибыли и параметры",
                 "⌁",
               ],
+
               [
                 "04",
                 "ПРИНИМАЙТЕ РЕШЕНИЕ",
@@ -1696,30 +2704,28 @@ export default function App() {
           </div>
         </section>
 
+        {/* CTA */}
+
         <section
           className="cta-section"
           id="tools"
         >
           <div>
             <h2>
-              СОХРАНЯЙТЕ И
-              АНАЛИЗИРУЙТЕ СВОИ
-              СДЕЛКИ
+              СОХРАНЯЙТЕ И АНАЛИЗИРУЙТЕ СВОИ СДЕЛКИ
             </h2>
 
             <p>
-              Создайте учетную
-              запись, чтобы
-              сохранять сделки,
+              Создайте учетную запись, чтобы сохранять сделки,
               <br />
-              отслеживать
-              статистику и
-              анализировать
-              результаты.
+
+              отслеживать статистику и анализировать результаты.
             </p>
 
             <button
-              onClick={saveDeal}
+              onClick={
+                saveDeal
+              }
             >
               Создать аккаунт
             </button>
@@ -1734,6 +2740,8 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* FOOTER */}
 
       <footer id="about">
         <div className="footer-inner container">
@@ -1754,16 +2762,16 @@ export default function App() {
             </h4>
 
             <p>
-              Профессиональные
-              инструменты
+              Профессиональные инструменты
               <br />
-              для трейдеров и
-              инвесторов.
+
+              для трейдеров и инвесторов.
               <br />
-              Принимайте
-              взвешенные решения
-              <br />и управляйте
-              рисками.
+
+              Принимайте взвешенные решения
+              <br />
+
+              и управляйте рисками.
             </p>
           </div>
 
@@ -1775,15 +2783,17 @@ export default function App() {
             <p>
               Калькулятор позиции
               <br />
+
               Калькулятор риска
               <br />
+
               Калькулятор прибыли
               <br />
-              Калькулятор
-              усреднения
+
+              Калькулятор усреднения
               <br />
-              Калькулятор
-              ликвидации
+
+              Калькулятор ликвидации
             </p>
           </div>
 
@@ -1795,38 +2805,407 @@ export default function App() {
             <p>
               FAQ
               <br />
-              Инструкции
+
+              <button
+                className="footer-link"
+                onClick={() =>
+                  setInstructionsOpen(
+                    true
+                  )
+                }
+              >
+                Инструкции
+              </button>
+
               <br />
+
               Обратная связь
               <br />
-              Политика
-              конфиденциальности
+
+              Политика конфиденциальности
               <br />
-              Условия
-              использования
+
+              Условия использования
             </p>
           </div>
 
           <div>
             <h4>
-              СЛЕДИТЕ ЗА
-              НОВОСТЯМИ
+              СЛЕДИТЕ ЗА НОВОСТЯМИ
             </h4>
 
             <div className="socials">
-              <span>➤</span>
-              <span>▶</span>
-              <span>◎</span>
+              <a
+                href="https://t.me/dasha_ozden"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Telegram"
+              >
+                ➤
+              </a>
+
+              <a
+                href="https://youtu.be/WXImOBv-674"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="YouTube"
+              >
+                ▶
+              </a>
+
+              <a
+                href="https://instagram.com/dashaozd"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+              >
+                ◎
+              </a>
             </div>
 
             <p className="copyright">
-              © 2026 Trade
-              Calculator. Все
-              права защищены.
+              © 2026 Trade Calculator. Все права защищены.
             </p>
           </div>
         </div>
       </footer>
+
+      {/* INSTRUCTIONS */}
+
+      {instructionsOpen && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setInstructionsOpen(
+              false
+            )
+          }
+        >
+          <div
+            className="instruction-modal"
+            onMouseDown={(
+              event
+            ) =>
+              event.stopPropagation()
+            }
+          >
+            <button
+              className="modal-close"
+              onClick={() =>
+                setInstructionsOpen(
+                  false
+                )
+              }
+            >
+              ×
+            </button>
+
+            <div className="modal-kicker">
+              TRADE CALCULATOR
+            </div>
+
+            <h2>
+              Инструкция и словарь
+            </h2>
+
+            <p className="modal-lead">
+              Короткая памятка, чтобы понимать каждую цифру в расчёте и использовать калькулятор одинаково для Crypto и TradFi.
+            </p>
+
+            <h3>
+              Как пользоваться
+            </h3>
+
+            <div className="instruction-steps">
+              <div>
+                <b>01</b>
+
+                <span>
+                  <strong>
+                    Укажите депозит и риск.
+                  </strong>{" "}
+
+                  Например, депозит 1 000 USDT и риск 1,5% → риск в USDT равен 15 USDT.
+                </span>
+              </div>
+
+              <div>
+                <b>02</b>
+
+                <span>
+                  <strong>
+                    Выберите инструмент и направление.
+                  </strong>{" "}
+
+                  LONG — расчёт сделки в сторону роста цены, SHORT — в сторону снижения.
+                </span>
+              </div>
+
+              <div>
+                <b>03</b>
+
+                <span>
+                  <strong>
+                    Укажите Entry, Stop Loss и Take Profit.
+                  </strong>{" "}
+
+                  Чем ближе Stop Loss к Entry, тем больше допустимый размер позиции при неизменном риске.
+                </span>
+              </div>
+
+              <div>
+                <b>04</b>
+
+                <span>
+                  <strong>
+                    Выберите плечо.
+                  </strong>{" "}
+
+                  Плечо изменяет необходимую маржу, но не должно увеличивать заранее заданный риск сделки.
+                </span>
+              </div>
+
+              <div>
+                <b>05</b>
+
+                <span>
+                  <strong>
+                    Изучите результат.
+                  </strong>{" "}
+
+                  Проверьте размер позиции, R:R, маржу, комиссию и потенциальную прибыль до входа.
+                </span>
+              </div>
+            </div>
+
+            <h3>
+              Словарь
+            </h3>
+
+            <div className="dictionary">
+              <article>
+                <h4>
+                  Риск на сделку
+                </h4>
+
+                <p>
+                  Процент депозита, который трейдер допускает потерять при срабатывании Stop Loss. Пример: 1 000 USDT × 1,5% = 15 USDT.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Риск в USDT
+                </h4>
+
+                <p>
+                  Тот же допустимый риск, но уже выраженный в деньгах. Именно эта сумма используется при расчёте размера позиции.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Размер позиции
+                </h4>
+
+                <p>
+                  Полная стоимость открываемой позиции. Она зависит от риска и расстояния между Entry и Stop Loss.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Необходимая маржа
+                </h4>
+
+                <p>
+                  Собственные средства, необходимые для удержания позиции. Пример: позиция 5 000 USDT при плече 10x требует примерно 500 USDT маржи.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Ориентировочная комиссия
+                </h4>
+
+                <p>
+                  Расчёт расходов на открытие и закрытие позиции по Maker/Taker ставке выбранного инструмента BingX.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Потенциальная прибыль после комиссии
+                </h4>
+
+                <p>
+                  Расчётная прибыль при достижении Take Profit после вычета ориентировочной комиссии входа и выхода.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  R:R
+                </h4>
+
+                <p>
+                  Соотношение риска к потенциальной прибыли. Например, 1:3 означает примерно три USDT потенциальной прибыли на один USDT риска.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Стоп дистанция
+                </h4>
+
+                <p>
+                  Расстояние от Entry до Stop Loss в цене и процентах. Для дешёвых активов калькулятор автоматически показывает больше знаков после запятой.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Maker / Taker
+                </h4>
+
+                <p>
+                  Maker обычно добавляет ликвидность лимитным ордером, Taker забирает доступную ликвидность. Ставки комиссии могут отличаться.
+                </p>
+              </article>
+
+              <article>
+                <h4>
+                  Плечо
+                </h4>
+
+                <p>
+                  Позволяет уменьшить собственную маржу для позиции. Максимальное плечо ограничивается параметрами выбранного инструмента.
+                </p>
+              </article>
+            </div>
+
+            <div className="example-box">
+              <h3>
+                Пример расчёта
+              </h3>
+
+              <p>
+                <b>
+                  Депозит:
+                </b>{" "}
+
+                1 000 USDT ·{" "}
+
+                <b>
+                  Риск:
+                </b>{" "}
+
+                1,5% → 15 USDT.
+              </p>
+
+              <p>
+                <b>
+                  Размер позиции:
+                </b>{" "}
+
+                5 000 USDT ·{" "}
+
+                <b>
+                  Плечо:
+                </b>{" "}
+
+                10x → необходимая маржа около 500 USDT.
+              </p>
+
+              <p>
+                Если движение до Take Profit даёт 150 USDT валовой прибыли, а ориентировочная комиссия входа и выхода составляет около 5 USDT, потенциальная прибыль после комиссии будет около{" "}
+
+                <b>
+                  145 USDT
+                </b>.
+              </p>
+            </div>
+
+            <p className="disclaimer">
+              Funding, проскальзывание и персональные VIP-ставки комиссии пока не включены в базовый расчёт.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* SHARE */}
+
+      {shareOpen && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setShareOpen(
+              false
+            )
+          }
+        >
+          <div
+            className="share-modal"
+            onMouseDown={(
+              event
+            ) =>
+              event.stopPropagation()
+            }
+          >
+            <button
+              className="modal-close"
+              onClick={() =>
+                setShareOpen(
+                  false
+                )
+              }
+            >
+              ×
+            </button>
+
+            <div className="modal-kicker">
+              ПОДЕЛИТЬСЯ РАСЧЁТОМ
+            </div>
+
+            <h2>
+              {displaySymbol} ·{" "}
+              {side} ·{" "}
+              {leverage}x
+            </h2>
+
+            <canvas
+              ref={
+                sharePreviewRef
+              }
+              className="share-preview"
+            />
+
+            <div className="share-actions">
+              <button
+                className="secondary"
+                onClick={
+                  downloadShareImage
+                }
+              >
+                Скачать PNG
+              </button>
+
+              <button
+                className="primary"
+                onClick={() =>
+                  void nativeShare()
+                }
+              >
+                Поделиться ↗
+              </button>
+            </div>
+
+            <p className="share-note">
+              На карточке не показываются депозит и персональные данные — только параметры и результат конкретной сделки.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

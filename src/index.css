@@ -1,0 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap");
+
+:root{
+  font-family:"DM Sans",Arial,sans-serif;
+  color:#2a1919;
+  background:#f8f2ef;
+  font-synthesis:none;
+  text-rendering:optimizeLegibility;
+  --wine:#68121e;
+  --wine2:#4c0d16;
+  --ink:#241919;
+  --muted:#786b69;
+  --line:#e4d5d0;
+  --cream:#fcf8f5;
+  --green:#173d3a;
+  --green2:#0f302e;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:320px;background:
+radial-gradient(circle at 10% 5%,rgba(116,48,38,.08),transparent 22%),
+radial-gradient(circle at 85% 20%,rgba(108,23,31,.05),transparent 25%),
+linear-gradient(135deg,#fbf7f4 0%,#f5eeea 48%,#fbf8f5 100%);color:var(--ink)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+.container{width:min(1180px,calc(100% - 48px));margin:0 auto}
+.site{overflow:hidden;min-height:100vh}
+.header{height:110px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:18px}
+.brand-mark{width:76px;height:76px;position:relative;font-family:"Playfair Display",Georgia,serif;color:#351217}
+.brand-mark span{font-size:58px;position:absolute;left:8px;top:3px;font-weight:500}
+.brand-mark i{font-size:40px;font-style:normal;position:absolute;left:32px;top:23px;font-weight:500}
+.brand-mark:after{content:"OZDEN";position:absolute;font:11px "DM Sans";letter-spacing:1px;left:9px;bottom:0}
+.brand-name{font:500 24px "Playfair Display",Georgia,serif;letter-spacing:1.8px}
+.brand-subtitle{font-size:13px;color:#776968;margin-top:7px}
+.top-nav{display:flex;align-items:center;gap:38px;font-size:13px}
+.top-nav a{transition:.2s}.top-nav a:hover{color:var(--wine)}
+.saved-button{border:0;background:#202124;color:#fff;padding:14px 18px;border-radius:7px;box-shadow:0 5px 18px rgba(0,0,0,.08)}
+.saved-button span{margin-left:8px}
+.market-tabs{height:64px;border:1px solid var(--line);border-radius:14px 14px 0 0;background:rgba(255,252,250,.72);display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.market-tabs button{border:0;background:transparent;color:#4e2928;font:500 14px "Playfair Display",Georgia,serif;letter-spacing:.5px;position:relative}
+.market-tabs button.active{background:#fffaf7}
+.market-tabs button.active:after{content:"";position:absolute;bottom:0;left:28%;right:28%;height:2px;background:#7a1523}
+.tab-icon{font-family:Arial;font-size:20px;margin-right:9px;vertical-align:-2px}
+.calculator-shell{display:grid;grid-template-columns:380px 1fr;gap:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 15px 15px;padding:18px;background:rgba(255,252,250,.78);box-shadow:0 18px 50px rgba(72,33,27,.06)}
+.left-panel,.right-panel{border:1px solid var(--line);border-radius:10px;background:rgba(255,253,251,.62)}
+.form-section{padding:18px 15px;border-bottom:1px solid #eadeda}
+.form-section:last-child{border-bottom:0}
+.section-title{font:500 16px "Playfair Display",Georgia,serif;letter-spacing:.3px;margin-bottom:24px}
+.section-title b{font-family:"DM Sans";font-size:14px;margin-right:4px}
+.field-row{display:grid;grid-template-columns:1fr 216px;align-items:center;gap:12px;margin:12px 0}
+.field-row label,.field-label{font-size:12px;color:#312424}
+.field-label{margin:17px 0 8px}
+.input-suffix,.select-like{height:38px;border:1px solid #dfd0cb;border-radius:6px;background:#fffdfa;display:flex;align-items:center;overflow:hidden}
+.input-suffix input{width:100%;border:0;background:transparent;outline:0;padding:0 10px;font-size:12px;color:#281b1b}
+.input-suffix span{font-size:10px;color:#8b7d79;padding-right:10px}
+.select-like{justify-content:space-between;padding:0 10px;font-size:11px}
+.select-like select{appearance:none;border:0;outline:0;background:transparent;width:100%;color:#302323}
+.select-like span{margin-left:-15px}
+.risk-card{margin-top:18px;border:1px solid #ead8d2;background:linear-gradient(120deg,#fbf2ee,#f8efeb);border-radius:7px;text-align:center;padding:11px}
+.risk-card span{font-size:11px;display:block}
+.risk-card strong{font:500 20px "Playfair Display",Georgia,serif;color:var(--wine);display:block;margin-top:5px}
+.risk-card small,.big-results small{font:10px "DM Sans";font-weight:400;color:#6d5e5b}
+.side-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.side-buttons button{height:40px;border:1px solid #ddcec9;background:#fffdfa;border-radius:6px;font-size:12px;color:#69151e}
+.side-buttons button.chosen.long{background:#173d3a;color:white;border-color:#173d3a}
+.side-buttons button.chosen.short{background:#fff;color:#67121d;border-color:#67121d}
+.ticker-wrap{position:relative;display:flex;height:38px}
+.ticker-wrap>input{min-width:0;flex:1;border:1px solid #dfd0cb;border-radius:6px 0 0 6px;background:#fffdfa;padding:0 10px;outline:0;font-size:12px}
+.exchange{width:112px;border:1px solid #dfd0cb;border-left:0;border-radius:0 6px 6px 0;background:#fffdfa;display:flex;align-items:center;justify-content:center;font-size:11px}
+.exchange b{margin-left:8px}
+.suggestions{position:absolute;top:42px;left:0;right:112px;z-index:20;background:#fff;border:1px solid var(--line);border-radius:7px;box-shadow:0 15px 35px rgba(60,25,20,.14);overflow:hidden}
+.suggestions button{width:100%;display:flex;justify-content:space-between;border:0;border-bottom:1px solid #f0e7e3;background:#fff;padding:10px 12px;text-align:left}
+.suggestions button:hover{background:#fbf2ef}
+.suggestions strong{font-size:12px}.suggestions span{font-size:10px;color:#8b7d79}
+.live-price{margin:14px 0;border:1px solid #e6d9d4;background:#fbf4f1;border-radius:7px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center}
+.live-price span{display:block;font-size:11px;color:#514443}.live-price em{font-style:normal;color:#1d6c62;font-size:9px;margin-left:5px}
+.live-price strong{display:block;font-size:18px;margin-top:5px}.live-price small{font-size:9px;font-weight:400;color:#796d69}
+.price-actions{display:flex;gap:10px}.price-actions button{border:0;background:transparent;font-size:20px;color:#735d5a}
+.advanced{border:0;border-top:1px solid #eee2dd;width:100%;margin-top:15px;padding:13px 0 0;background:transparent;text-align:left;color:#6c292e;font-size:11px}
+.calculate-row{display:grid;grid-template-columns:1fr 40px;gap:8px;margin-top:12px}
+.calculate{border:0;border-radius:6px;background:linear-gradient(90deg,#6a0d1b,#851729);height:39px;color:#fff;font:500 14px "Playfair Display",Georgia,serif}
+.reset{border:1px solid #decfc9;background:#fff;border-radius:6px;color:#6a1a21;font-size:17px}
+.right-panel{padding:14px}
+.results-head{display:flex;justify-content:space-between;align-items:center;padding:0 2px 4px}
+.results-head .section-title{margin:0}
+.save-small{background:#6a0d1b;color:#fff;border:0;border-radius:6px;padding:10px 13px;font-size:11px}
+.big-results{display:grid;grid-template-columns:1fr 1fr 1.25fr;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fffdfa}
+.big-results>div{padding:14px 10px;text-align:center;border-right:1px solid var(--line)}
+.big-results>div:last-child{border-right:0}
+.big-results span,.mini-results span{display:block;font-size:10px}
+.big-results strong{display:block;font:500 27px "Playfair Display",Georgia,serif;margin:8px 0 2px}
+.big-results small{line-height:1.5}
+.mini-results{display:grid;grid-template-columns:repeat(4,1fr);margin-top:8px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fffdfa}
+.mini-results>div{text-align:center;padding:11px 6px;border-right:1px solid var(--line)}
+.mini-results>div:last-child{border-right:0}
+.mini-results strong{display:block;font:500 18px "Playfair Display",Georgia,serif;margin-top:8px}
+.mini-results small{font:9px "DM Sans";font-weight:400}
+.chart-card,.details-card,.status-card{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fffdfa}
+.price-chart{height:250px;position:relative;overflow:hidden;background:
+linear-gradient(90deg,transparent 0 36%,rgba(229,234,227,.75) 36% 68%,transparent 68%),
+linear-gradient(180deg,transparent,rgba(248,240,236,.45))}
+.price-chart:after{content:"";position:absolute;left:36%;right:36%;top:0;bottom:0;background:linear-gradient(180deg,rgba(239,239,233,.9),rgba(250,244,239,.35));z-index:0}
+.vertical-price{position:absolute;left:63%;top:10%;bottom:7%;width:2px;background:#161616;z-index:2}
+.vertical-price:before,.vertical-price:after{content:"";position:absolute;left:-7px;width:12px;height:12px;border:4px solid #173d3a;background:#fff;border-radius:50%}
+.vertical-price:before{top:11%}.vertical-price:after{top:46%;border-color:#111}
+.tp-line,.entry-line,.sl-line{position:absolute;left:0;right:0;height:1px;z-index:1}
+.tp-line{background:#4f9d8e}.entry-line{background:#2c2c2c}.sl-line{background:#bb5a58}
+.tp-line span,.entry-line span,.sl-line span{position:absolute;left:20px;top:-17px;font-size:10px;color:#273e3b}
+.entry-line span{color:#2c2727}.sl-line span{color:#7b2d31}
+.tp-line span b,.entry-line span b,.sl-line span b{font-size:10px}
+.price-marker{position:absolute;right:15px;transform:translateY(-50%);z-index:4;border:1px solid #cfded9;border-radius:6px;padding:9px 11px;background:#f4f7f3;font-size:10px;color:#1e5a4e;min-width:109px}
+.price-marker b{font-size:10px}.entry-marker{background:#f8f5f3;color:#282222;border-color:#dfd1cc}.sl-marker{background:#fff2f1;color:#a02b30;border-color:#e8b9b8}
+.chart-footer{display:flex;justify-content:space-between;padding:10px 13px;border-top:1px solid var(--line);font-size:9px;color:#645755}
+.details-card{padding:12px}
+.details-card h4{font:500 12px "DM Sans";margin:0 0 12px}
+.details-grid{display:grid;grid-template-columns:1fr 1fr}
+.details-grid>div{display:flex;justify-content:space-between;padding:5px 0;font-size:9px;border-right:1px solid #eee3df;padding-right:20px;margin-right:15px}
+.details-grid>div:nth-child(even){border-right:0;padding-left:15px;padding-right:0;margin-right:0}
+.details-grid span{color:#5e514f}.details-grid b{font-weight:500;color:#282020}
+.status-card{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.status-icon{width:22px;height:22px;border-radius:50%;background:#eee2dc;display:flex;align-items:center;justify-content:center;font:700 12px Georgia}
+.status-card div:nth-child(2){flex:1}.status-card strong{font-size:8px;display:block}.status-card span{font-size:7px;color:#847875;display:block;margin-top:3px}.status-card>small{font-size:7px;color:#847875;white-space:nowrap}
+.how-section{margin-top:24px;padding:18px 20px;border:1px solid var(--line);border-radius:12px;background:rgba(255,251,248,.75)}
+.how-section h2,.cta-section h2{font:500 17px "Playfair Display",Georgia,serif;margin:0 0 18px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.step{display:flex;gap:11px;align-items:center}.step-icon{width:43px;height:43px;flex:0 0 43px;border:1px solid #d9b9b3;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#74202a;font-size:18px;background:#fcf4f1}
+.step b{font-size:9px}.step p{font-size:8px;color:#766966;line-height:1.45;margin:5px 0 0}
+.cta-section{margin:16px 0;border-radius:12px;padding:25px;background:linear-gradient(125deg,#3b0b14,#210c11);color:white;display:flex;min-height:165px;overflow:hidden;position:relative}
+.cta-section:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,rgba(255,200,190,.13),transparent 28%);pointer-events:none}
+.cta-section h2{font-size:18px}.cta-section p{font-size:11px;color:#e4cfd0;line-height:1.5}
+.cta-section button{margin-top:5px;border:0;background:#e0a29c;color:white;border-radius:5px;padding:12px 22px;font-size:11px}
+.dashboard-preview{position:absolute;right:22px;bottom:-22px;width:52%;height:135px;border-radius:12px 12px 0 0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);padding:10px}
+.fake-dashboard{height:100%;display:grid;grid-template-columns:70px 1fr 110px;gap:8px;opacity:.8}.fake-sidebar,.fake-chart,.fake-list{border-radius:5px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.08)}.fake-chart{background:radial-gradient(circle at 40% 55%,#4cc2bd 0 18%,transparent 19%),linear-gradient(160deg,transparent 55%,rgba(238,154,148,.5) 56% 58%,transparent 59%)}.fake-list{background:linear-gradient(#ffffff10 20%,transparent 20% 28%,#ffffff0d 28% 32%,transparent 32% 48%,#ffffff0d 48% 52%,transparent 52%)}
+footer{background:#0f2c2b;color:#eee9e6;padding:35px 0 45px}
+.footer-inner{display:grid;grid-template-columns:110px 1.2fr 1fr 1fr 1fr;gap:35px}.footer-brand{display:flex;flex-direction:column;align-items:center}.brand-mark.large{color:#f4ece9;transform:scale(.8);transform-origin:top center}.footer-brand small{margin-top:-17px;letter-spacing:2px}.footer-inner h4{font-size:10px;margin:6px 0 14px}.footer-inner p{font-size:9px;line-height:1.8;color:#b9b5b1;margin:0}.socials{display:flex;gap:10px;margin-bottom:20px}.socials span{width:30px;height:30px;border-radius:50%;background:#684c50;display:flex;align-items:center;justify-content:center}.copyright{font-size:8px!important;color:#8c8a87!important}
+@media(max-width:950px){
+  .top-nav{gap:14px}.top-nav a{display:none}.calculator-shell{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.dashboard-preview{opacity:.45}
+}
+@media(max-width:620px){
+  .container{width:min(100% - 24px,1180px)}.header{height:90px}.brand-name{font-size:17px}.brand-mark{transform:scale(.78);transform-origin:left center;margin-right:-14px}.market-tabs{height:55px}.calculator-shell{padding:8px}.field-row{grid-template-columns:1fr 175px}.big-results strong{font-size:21px}.mini-results{grid-template-columns:1fr 1fr}.mini-results>div:nth-child(2){border-right:0}.mini-results>div{border-bottom:1px solid var(--line)}.details-grid{grid-template-columns:1fr}.details-grid>div,.details-grid>div:nth-child(even){border-right:0;padding:5px 0;margin:0}.steps{grid-template-columns:1fr}.cta-section{min-height:250px}.dashboard-preview{position:absolute;left:20px;right:20px;width:auto;bottom:15px}.footer-inner{grid-template-columns:1fr 1fr;gap:25px}.footer-brand{display:none}
+}
